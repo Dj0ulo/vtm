@@ -25,6 +25,7 @@ import org.oscim.renderer.GLViewport;
 import org.oscim.renderer.MapRenderer;
 import org.oscim.renderer.bucket.*;
 import org.oscim.utils.FastMath;
+import org.oscim.utils.quadtree.TreeNode;
 
 import java.util.logging.Logger;
 
@@ -135,12 +136,12 @@ public class VectorTileRenderer extends TileRenderer {
             }
         }
 
-        /* draw grandparents */
+        /* draw ancestors */
         for (int i = 0; i < tileCnt; i++) {
             MapTile t = tiles[i];
             if ((!t.isVisible) || (t.lastDraw == mDrawSerial))
                 continue;
-            drawGrandParent(t, v);
+            drawAncestors(t, v);
         }
 
         gl.depthMask(false);
@@ -289,11 +290,17 @@ public class VectorTileRenderer extends TileRenderer {
         return false;
     }
 
-    protected void drawGrandParent(MapTile t, GLViewport v) {
-        MapTile proxy = t.getProxy(PROXY_GRAMPA, READY);
-        if (proxy != null) {
-            drawTile(proxy, v, -2);
-            t.lastDraw = mDrawSerial;
-        }
+    protected void drawAncestors(MapTile t, GLViewport v) {
+        TreeNode<MapTile.TileNode, MapTile> cur = t.node.parent.parent;
+        int proxyLevel = -2;
+        do {
+            if (cur.item != null && cur.item.state(READY)) {
+                drawTile(cur.item, v, proxyLevel);
+                t.lastDraw = mDrawSerial;
+                return;
+            }
+            cur = cur.parent;
+            proxyLevel --;
+        } while (!cur.isRoot());
     }
 }

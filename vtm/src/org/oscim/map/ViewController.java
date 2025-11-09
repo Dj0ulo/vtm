@@ -160,6 +160,8 @@ public class ViewController extends Viewport {
             mPos.y = mMaxY;
         else if (mPos.y < mMinY)
             mPos.y = mMinY;
+
+        updateMatrices();
     }
 
     /**

@@ -67,16 +67,23 @@ public class TileDecoder implements ITileDecoder {
     @Override
     public boolean decode(Tile tile, ITileDataSink sink, InputStream is)
             throws IOException {
+        JtsMvt jtsMvt = loadMvt(is);
+        return decode(tile, sink, jtsMvt);
+    }
 
+    public JtsMvt loadMvt(InputStream is)
+            throws IOException {
+        return MvtReader.loadMvt(
+            is,
+            mGeomFactory,
+            new TagKeyValueMapConverter(),
+            MvtReader.RING_CLASSIFIER_V1
+        );
+    }
+
+    public boolean decode(Tile tile, ITileDataSink sink, JtsMvt jtsMvt) {
         mTileDataSink = sink;
         mScale = REF_TILE_SIZE / Tile.SIZE;
-
-        JtsMvt jtsMvt = MvtReader.loadMvt(
-                is,
-                mGeomFactory,
-                new TagKeyValueMapConverter(),
-                MvtReader.RING_CLASSIFIER_V1);
-
 
         for (JtsLayer layer : jtsMvt.getLayers()) {
             for (Geometry geometry : layer.getGeometries()) {

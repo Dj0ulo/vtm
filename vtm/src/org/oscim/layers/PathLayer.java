@@ -91,6 +91,7 @@ public class PathLayer extends Layer implements GestureListener {
 
     public void setStyle(LineStyle style) {
         mLineStyle = style;
+        updatePoints();
     }
 
     public void clearPath() {

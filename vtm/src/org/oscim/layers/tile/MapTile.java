@@ -29,6 +29,8 @@ import org.oscim.utils.quadtree.TreeNode;
 import java.util.logging.Logger;
 
 import static org.oscim.layers.tile.MapTile.State.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Extends Tile class to hold state and data.
@@ -408,6 +410,10 @@ public class MapTile extends Tile {
     }
 
     public String state() {
+        return stateToString(state);
+    }
+
+    public static String stateToString(byte state) {
         switch (state) {
             case State.NONE:
                 return "None";
@@ -425,6 +431,25 @@ public class MapTile extends Tile {
         return "";
     }
 
+    private List<OnStateChangeListener> onStateChangeListeners = new ArrayList<>();
+    public interface OnStateChangeListener {
+        void onStateChanged(MapTile tile, byte oldState, byte newState);
+    }
+
+    public void addOnStateChangeListener(OnStateChangeListener listener) {
+        onStateChangeListeners.add(listener);
+    }
+
+    public void removeOnStateChangeListener(OnStateChangeListener listener) {
+        onStateChangeListeners.remove(listener);
+    }
+
+    private void notifyStateChange(byte oldState, byte newState) {
+        for (OnStateChangeListener listener : onStateChangeListeners) {
+            listener.onStateChanged(this, oldState, newState);
+        }
+    }
+
     public synchronized void setState(byte newState) {
         if (state == newState)
             return;
@@ -435,44 +460,17 @@ public class MapTile extends Tile {
         if (state == DEADBEEF)
             return;
 
-        switch (newState) {
-            case NONE:
-                state = newState;
-                return;
-
-            case LOADING:
-                if (state == NONE) {
-                    state = newState;
-                    return;
-                }
-                throw new IllegalStateException("Loading"
-                        + " <= " + state() + " " + this);
-            case NEW_DATA:
-                if (state == LOADING) {
-                    state = newState;
-                    return;
-                }
-                throw new IllegalStateException("NewData"
-                        + " <= " + state() + " " + this);
-
-            case READY:
-                if (state == NEW_DATA) {
-                    state = newState;
-                    return;
-                }
-                throw new IllegalStateException("Ready"
-                        + " <= " + state() + " " + this);
-
-            case CANCEL:
-                if (state == LOADING) {
-                    state = newState;
-                    return;
-                }
-                throw new IllegalStateException("Cancel" +
-                        " <= " + state() + " " + this);
-            case DEADBEEF:
-                state = newState;
-                return;
+        if (
+            newState == LOADING && state != NONE ||
+            newState == NEW_DATA && state != LOADING ||
+            newState == READY && state != NEW_DATA ||
+            newState == CANCEL && state != LOADING
+        ) {
+            throw new IllegalStateException(stateToString(newState) + " <= " + state() + " " + this);
         }
+
+        byte oldState = state;
+        state = newState;
+        notifyStateChange(oldState, newState);
     }
 }

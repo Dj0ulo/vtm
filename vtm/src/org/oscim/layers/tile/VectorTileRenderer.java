@@ -291,6 +291,9 @@ public class VectorTileRenderer extends TileRenderer {
     }
 
     protected void drawAncestors(MapTile t, GLViewport v) {
+        if (t.node == null || t.node.parent == null || t.node.parent.isRoot()) {
+            return;
+        }
         TreeNode<MapTile.TileNode, MapTile> cur = t.node.parent.parent;
         int proxyLevel = -2;
         do {
